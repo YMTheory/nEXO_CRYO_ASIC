@@ -248,11 +248,24 @@ class CryoAsicAnalysis:
 			guess = [max(n), np.std(all_samples), np.median(all_samples)]
 			try:
 				popt, pcov = curve_fit(gausfit, bc, n, p0=guess)
-				self.noise_df["STD"].iloc[ch] = popt[1] #ADC counts
+				if (ch in self.noise_df.index):
+					self.noise_df.at[ch, "STD"] = popt[1]
+				else:
+					s = pd.Series()
+					s["STD"] = popt[1]
+					#self.noise_df["STD"].iloc[ch] = popt[1] #ADC counts
+					self.noise_df = self.noise_df.append(s, ignore_index=True)
 			except:
 				print("Fit failed..., just doing regular std")
 				print(ch, np.std(all_samples), self.noise_df)
 				self.noise_df["STD"].iloc[ch] = np.std(all_samples)
+				if (ch in self.noise_df.index):
+					self.noise_df.at[ch, "STD"] = np.std(all_samples)
+				else:
+					s = pd.Series()
+					s["STD"] = np.std(all_samples)
+					#self.noise_df["STD"].iloc[ch] = popt[1] #ADC counts
+					self.noise_df = self.noise_df.append(s, ignore_index=True)
 
 			
 				
