@@ -50,9 +50,9 @@ class CryoAsicAnalysis:
 		#mv_per_adc: rough conversion, constant, assuming linearity
 		self.config = config 
 
-		print("loading hdf5 file " + self.infile)
+		#print("loading hdf5 file " + self.infile)
 		self.df = pd.read_hdf(self.infile, key='raw')
-		print("Done loading")
+		#print("Done loading")
 
 		self.nevents_total = len(self.df.index)
 
@@ -223,6 +223,7 @@ class CryoAsicAnalysis:
 
 
 	def calculate_stds(self):
+
 		chs = self.df.iloc[0]["Channels"]
 		nevents = len(self.df.index) #looping through all events
 		looper = tqdm(chs, desc="Calculating stds on each channel...")
@@ -245,25 +246,20 @@ class CryoAsicAnalysis:
 			n, bins = np.histogram(all_samples, bins, density=1)
 			bc = (bins[:-1] + bins[1:])/2
 			guess = [max(n), np.std(all_samples), np.median(all_samples)]
-			if ch in self.config['device_channel']:
-				self.noise_df.iloc[ch] = np.std(all_samples)
-			else:
-				try:
-					popt, pcov = curve_fit(gausfit, bc, n, p0=guess)
-					self.noise_df["STD"].iloc[ch] = popt[1] #ADC counts
-				except:
-					print("Fit failed..., just doing regular std")
-					self.noise_df["STD"].iloc[ch] = np.std(all_samples)
+			try:
+				popt, pcov = curve_fit(gausfit, bc, n, p0=guess)
+				self.noise_df["STD"].iloc[ch] = popt[1] #ADC counts
+			except:
+				print("Fit failed..., just doing regular std")
+				print(ch, np.std(all_samples), self.noise_df)
+				self.noise_df["STD"].iloc[ch] = np.std(all_samples)
 
-			"""		
-			fig, ax = plt.subplots(figsize=(8, 5))
-			ax.hist(all_samples, bins, density=1)
-			#ax.plot(bc, gausfit(bc, *popt))
-			plt.show()
-			"""
 			
-
-
+				
+			#fig, ax = plt.subplots(figsize=(8, 5))
+			#ax.hist(all_samples, bins, density=1)
+			##ax.plot(bc, gausfit(bc, *popt))
+			#plt.show()
 
 
 
