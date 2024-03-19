@@ -12,7 +12,9 @@ class comparison:
         self.viewers            = {}
         
         self.noise_dfs          = {}    
-    
+
+        self.coupled_channelId  = None
+        self.noncoupled_channelId = None
     
     ## adder
     
@@ -47,12 +49,14 @@ class comparison:
         return self.noise_dfs[lb]['STD'].to_numpy()
     
     
-
+    def _set_coupled_channel(self, chids):
+        self.coupled_channelId = chids
+        self.noncoupled_channelId = np.array([ i for i in range(64) if i not in chids])
 
     ## noise analysis
     def calculate_noise(self):
         for lb, ana in self.analysers.items():
-            ana.calculate_avg_psds() # We must calculate PSD before stds in this script...
+            #ana.calculate_avg_psds() # We must calculate PSD before stds in this script...
             ana.calculate_stds()
             self.noise_dfs[lb] = ana.noise_df
 
@@ -89,6 +93,22 @@ class comparison:
         return fig    
 
 
+    def _plot_std_separately(self):
+        fig, ax = plt.subplots(1, 2, figsize=(12, 6))
+        print(self.noncoupled_channelId)
+        for lb, _ in self.analysers.items():
+            stds = self._get_std_oneSet(lb)
+            ax[0].plot(self.coupled_channelId, stds[self.coupled_channelId], 'o-', label=lb)
+            ax[1].plot(self.noncoupled_channelId, stds[self.noncoupled_channelId], 'o-', label=lb)
+        
+        for i in range(2):
+            ax[i].set_xlabel('Channel ID', fontsize=13)
+            ax[i].set_ylabel('STD', fontsize=13)
+            ax[i].tick_params(axis='both', which='major', labelsize=13)
+            ax[i].legend(fontsize=13)
+        
+        plt.tight_layout()
+        return fig    
 
 
 
