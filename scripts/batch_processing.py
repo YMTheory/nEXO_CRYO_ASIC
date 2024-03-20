@@ -53,11 +53,16 @@ class batch:
         self.coupled_channelId = chids
         self.noncoupled_channelId = np.array([ i for i in range(64) if i not in chids])
 
-    ## noise analysis
-    def calculate_noise(self, calcpsd=False, subtract_baseline=False):
+    ## processor
+
+    
+    def subtract_baseline(self):
+        for _, ana in self.analysers.items():
+            ana.baseline_subtract()
+    
+    
+    def calculate_noise(self, calcpsd=False):
         for lb, ana in self.analysers.items():
-            if subtract_baseline:
-                ana.baseline_subtract()
             if calcpsd:
                 ana.calculate_avg_psds() # We must calculate PSD before stds in this script...
             ana.calculate_stds()
@@ -65,24 +70,6 @@ class batch:
 
 
     ## plotter
-    
-    def _plot_waveforms_oneChannel_oneEvent(self, lbs, evtid, chid):
-        
-        fig, ax = plt.subplots(figsize=(12, 8))
-        if len(lbs) == 0:
-            lbs = self.analysers.keys()
-        for lb in lbs:
-            ana = self.analysers[lb]
-            time = ana.times
-            ax.plot(time, self._get_waveform_oneChannel_oneEvent(ana, evtid, chid), label=lb)
-        
-        ax.set_xlabel('time [us]', fontsize=13)
-        ax.set_ylabel('ADC', fontsize=13)
-        ax.tick_params(axis='both', which='major', labelsize=13)
-        ax.legend(fontsize=13)
-        
-        plt.tight_layout()
-        return fig    
 
 
     def _plot_std(self, lbs):
@@ -121,7 +108,7 @@ class batch:
         return fig    
 
 
-    def _plot_waveforms_oneEvent(self, lbs, channels, evtid):
+    def _plot_waveforms_oneEvent(self, lbs, channels, evtid, lg=False, xrange=[]):
 
         fig, ax = plt.subplots(figsize=(8, 6))
         
@@ -137,8 +124,35 @@ class batch:
         ax.set_xlabel('time [us]', fontsize=13)
         ax.set_ylabel('ADC', fontsize=13)
         ax.tick_params(axis='both', which='major', labelsize=13)
-        ax.legend(fontsize=13)
+        if lg:
+            ax.legend(fontsize=13)
+        if len(xrange) == 2:
+            ax.set_xlim(xrange[0], xrange[1])
         
         plt.tight_layout()
         return fig
 
+
+
+    def _plot_std_differentSets(self, lbs, channels, lg=False):
+        fig, ax = plt.subplots(figsize=(8, 6))
+        if len(lbs) == 0:
+            lbs = self.analysers.keys()
+        N = len(lbs)
+        for ch in channels:
+            stds = []
+            for lb in lbs:
+                ana = self.analysers[lb]
+                stds.append(self.noise_dfs[lb]['STD'].iloc[ch])    
+
+            ax.plot(range(N), stds, 'o-', ms=4, label=f'ch{ch}')
+
+        ax.set_xticks(range(N), lbs, rotation=45, ha='right', fontsize=12)
+        ax.set_ylabel("STD", fontsize=12)
+        ax.tick_params(axis='both', which='major', labelsize=12)
+        if lg:
+            ax.legend(fontsize=12)
+            
+        plt.tight_layout()
+        return fig
+            
